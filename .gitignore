@@ -1,0 +1,14 @@
+# Dependencies
+node_modules/
+
+# Temporary files
+Running
+e97697c9ec65
+8e6b238aaae4
+c0d22c846dfb
+
+# Environment variables
+.env
+
+# Logs
+*.log 
