@@ -193,11 +193,17 @@ app.post("/boleto", autenticar, async (req, res) => {
   try {
     const { boletoData } = req.body;
     
-    // Por enquanto, apenas retorna os dados recebidos
+    // Echo completo dos dados recebidos
     return res.status(200).json({
       status: "DADOS_RECEBIDOS",
-      mensagem: "Dados do boleto recebidos com sucesso",
-      dados: boletoData
+      mensagem: "Dados recebidos com sucesso",
+      dados: {
+        body: req.body,
+        headers: req.headers,
+        query: req.query,
+        params: req.params,
+        boletoData: boletoData
+      }
     });
 
   } catch (error) {
