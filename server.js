@@ -188,30 +188,83 @@ app.post("/saldo", autenticar, async (req, res) => {
   }
 });
 
-// Rota para teste de boleto
+// Função para limpar código de barras
+function limparCodigoBarras(codBarras) {
+    return codBarras.replace(/[.\s]/g, '');
+}
+
+// Rota para processar boleto
 app.post("/boleto", autenticar, async (req, res) => {
   try {
     const { boletoData } = req.body;
+    const token = req.token;
     
-    // Echo completo dos dados recebidos
+    // Limpar o código de barras
+    const codBarraLimpo = limparCodigoBarras(boletoData.codBarras);
+    
+    // Preparar payload para o Banco Inter
+    const payloadInter = {
+        codBarraLinhaDigitavel: codBarraLimpo,
+        valorPagar: boletoData.valor.toString(),
+        dataVencimento: boletoData.vencimento
+    };
+
+    // URL do endpoint de pagamento de boleto
+    const boletoUrl = `${apiPartnersBaseUrl}/banking/v2/pagamento/boleto`;
+
+    // Realizar o pagamento
+    const pagamentoResponse = await axios.post(boletoUrl, payloadInter, {
+        httpsAgent,
+        headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+        },
+    });
+
+    const responseData = pagamentoResponse.data;
+
+    // Verificar se precisa atualizar o valor
+    if (responseData.statusPagamento === "ATUALIZAR VALOR") {
+        return res.status(200).json({
+            status: "ATUALIZAR_VALOR",
+            mensagem: "Valor do boleto precisa ser atualizado",
+            novoValor: responseData.novoValor
+        });
+    }
+
+    // Se o pagamento foi aprovado
+    if (responseData.statusPagamento === "APROVADO") {
+        return res.status(200).json({
+            status: "APROVADO",
+            mensagem: "Pagamento aprovado com sucesso",
+            codigoTransacao: responseData.codigoTransacao,
+            quantidadeAprovadores: responseData.quantidadeAprovadores
+        });
+    }
+
+    // Caso contrário, retornar o status recebido
     return res.status(200).json({
-      status: "DADOS_RECEBIDOS",
-      mensagem: "Dados recebidos com sucesso",
-      dados: {
-        body: req.body,
-        headers: req.headers,
-        query: req.query,
-        params: req.params,
-        boletoData: boletoData
-      }
+        status: responseData.statusPagamento,
+        mensagem: "Status do pagamento recebido",
+        dados: responseData
     });
 
   } catch (error) {
     console.error("Erro ao processar boleto:", error.message);
+    
+    // Verificar se é um erro de valor atualizado
+    if (error.response && error.response.data && error.response.data.statusPagamento === "ATUALIZAR VALOR") {
+        return res.status(200).json({
+            status: "ATUALIZAR_VALOR",
+            mensagem: "Valor do boleto precisa ser atualizado",
+            novoValor: error.response.data.novoValor
+        });
+    }
+
     return res.status(500).json({
-      status: "ERRO",
-      mensagem: "Erro ao processar boleto",
-      detalhes: error.message
+        status: "ERRO",
+        mensagem: "Erro ao processar boleto",
+        detalhes: error.response ? error.response.data : error.message
     });
   }
 });
