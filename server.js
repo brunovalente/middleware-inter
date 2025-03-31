@@ -221,50 +221,41 @@ app.post("/boleto", autenticar, async (req, res) => {
         },
     });
 
-    const responseData = pagamentoResponse.data;
-
-    // Verificar se precisa atualizar o valor
-    if (responseData.statusPagamento === "ATUALIZAR VALOR") {
-        return res.status(200).json({
-            status: "ATUALIZAR_VALOR",
-            mensagem: "Valor do boleto precisa ser atualizado",
-            novoValor: responseData.novoValor
-        });
-    }
-
-    // Se o pagamento foi aprovado
-    if (responseData.statusPagamento === "APROVADO") {
-        return res.status(200).json({
-            status: "APROVADO",
-            mensagem: "Pagamento aprovado com sucesso",
-            codigoTransacao: responseData.codigoTransacao,
-            quantidadeAprovadores: responseData.quantidadeAprovadores
-        });
-    }
-
-    // Caso contrário, retornar o status recebido
+    // Se chegou aqui, é status 200 - pagamento aprovado
     return res.status(200).json({
-        status: responseData.statusPagamento,
-        mensagem: "Status do pagamento recebido",
-        dados: responseData
+        status: "APROVADO",
+        mensagem: "Pagamento aprovado com sucesso",
+        codigoTransacao: pagamentoResponse.data.codigoTransacao,
+        quantidadeAprovadores: pagamentoResponse.data.quantidadeAprovadores
     });
 
   } catch (error) {
     console.error("Erro ao processar boleto:", error.message);
     
-    // Verificar se é um erro de valor atualizado
-    if (error.response && error.response.data && error.response.data.statusPagamento === "ATUALIZAR VALOR") {
-        return res.status(200).json({
-            status: "ATUALIZAR_VALOR",
-            mensagem: "Valor do boleto precisa ser atualizado",
-            novoValor: error.response.data.novoValor
+    // Se for erro 400 (dados inválidos)
+    if (error.response && error.response.status === 400) {
+        const errorData = error.response.data;
+        let mensagemErro = `${errorData.title}\n${errorData.detail}\n`;
+        
+        // Adiciona as violações se existirem
+        if (errorData.violacoes && errorData.violacoes.length > 0) {
+            mensagemErro += "\nViolações encontradas:\n";
+            errorData.violacoes.forEach(violacao => {
+                mensagemErro += `- ${violacao.propriedade}: ${violacao.razao}\n`;
+            });
+        }
+
+        return res.status(400).json({
+            status: "ERRO",
+            mensagem: mensagemErro
         });
     }
 
+    // Para outros tipos de erro
     return res.status(500).json({
         status: "ERRO",
         mensagem: "Erro ao processar boleto",
-        detalhes: error.response ? error.response.data : error.message
+        detalhes: error.message
     });
   }
 });
