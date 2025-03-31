@@ -11,4 +11,7 @@ c0d22c846dfb
 .env
 
 # Logs
-*.log 
+*.log
+
+# Certificates
+certificados/ 

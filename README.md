@@ -76,6 +76,31 @@ Consulta o saldo da conta.
 }
 ```
 
+### POST /boleto
+Endpoint para teste de processamento de boletos.
+
+**Corpo da requisição:**
+```json
+{
+  "clientId": "seu_client_id",
+  "clientSecret": "seu_client_secret",
+  "boletoData": {
+    // Dados do boleto para teste
+  }
+}
+```
+
+**Resposta de sucesso:**
+```json
+{
+  "status": "DADOS_RECEBIDOS",
+  "mensagem": "Dados do boleto recebidos com sucesso",
+  "dados": {
+    // Dados do boleto recebidos
+  }
+}
+```
+
 ## Segurança
 
 - Os certificados e chaves privadas não são versionados no repositório

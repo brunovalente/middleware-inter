@@ -188,6 +188,28 @@ app.post("/saldo", autenticar, async (req, res) => {
   }
 });
 
+// Rota para teste de boleto
+app.post("/boleto", autenticar, async (req, res) => {
+  try {
+    const { boletoData } = req.body;
+    
+    // Por enquanto, apenas retorna os dados recebidos
+    return res.status(200).json({
+      status: "DADOS_RECEBIDOS",
+      mensagem: "Dados do boleto recebidos com sucesso",
+      dados: boletoData
+    });
+
+  } catch (error) {
+    console.error("Erro ao processar boleto:", error.message);
+    return res.status(500).json({
+      status: "ERRO",
+      mensagem: "Erro ao processar boleto",
+      detalhes: error.message
+    });
+  }
+});
+
 // Iniciar o servidor
 const PORT = 3005;
 app.listen(PORT, () => {
