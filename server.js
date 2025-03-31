@@ -188,16 +188,16 @@ app.post("/saldo", autenticar, async (req, res) => {
   }
 });
 
-// Função para limpar código de barras
-function limparCodigoBarras(codBarras) {
-    return codBarras.replace(/[.\s]/g, '');
-}
-
 // Rota para processar boleto
 app.post("/boleto", autenticar, async (req, res) => {
   try {
     const { boletoData } = req.body;
     const token = req.token;
+    
+    // Função para limpar código de barras
+    function limparCodigoBarras(codBarras) {
+        return codBarras.replace(/[.\s]/g, '');
+    }
     
     // Limpar o código de barras
     const codBarraLimpo = limparCodigoBarras(boletoData.codBarras);
