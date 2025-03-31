@@ -191,6 +191,9 @@ app.post("/saldo", autenticar, async (req, res) => {
 // Rota para processar boleto
 app.post("/boleto", autenticar, async (req, res) => {
   try {
+    console.log(`[${new Date().toISOString()}] Iniciando processamento de boleto`);
+    console.log(`[${new Date().toISOString()}] Dados recebidos:`, JSON.stringify(req.body, null, 2));
+
     const { boletoData } = req.body;
     const token = req.token;
     
@@ -201,6 +204,7 @@ app.post("/boleto", autenticar, async (req, res) => {
     
     // Limpar o código de barras
     const codBarraLimpo = limparCodigoBarras(boletoData.codBarras);
+    console.log(`[${new Date().toISOString()}] Código de barras limpo:`, codBarraLimpo);
     
     // Preparar payload para o Banco Inter
     const payloadInter = {
@@ -208,11 +212,14 @@ app.post("/boleto", autenticar, async (req, res) => {
         valorPagar: boletoData.valor.toString(),
         dataVencimento: boletoData.vencimento
     };
+    console.log(`[${new Date().toISOString()}] Payload para o Banco Inter:`, JSON.stringify(payloadInter, null, 2));
 
     // URL do endpoint de pagamento de boleto
     const boletoUrl = `${apiPartnersBaseUrl}/banking/v2/pagamento/boleto`;
+    console.log(`[${new Date().toISOString()}] URL da requisição:`, boletoUrl);
 
     // Realizar o pagamento
+    console.log(`[${new Date().toISOString()}] Enviando requisição para o Banco Inter...`);
     const pagamentoResponse = await axios.post(boletoUrl, payloadInter, {
         httpsAgent,
         headers: {
@@ -220,8 +227,10 @@ app.post("/boleto", autenticar, async (req, res) => {
             "Content-Type": "application/json",
         },
     });
+    console.log(`[${new Date().toISOString()}] Resposta do Banco Inter:`, JSON.stringify(pagamentoResponse.data, null, 2));
 
     // Se chegou aqui, é status 200 - pagamento aprovado
+    console.log(`[${new Date().toISOString()}] Pagamento aprovado com sucesso`);
     return res.status(200).json({
         status: "APROVADO",
         mensagem: "Pagamento aprovado com sucesso",
@@ -230,11 +239,13 @@ app.post("/boleto", autenticar, async (req, res) => {
     });
 
   } catch (error) {
-    console.error("Erro ao processar boleto:", error.message);
+    console.error(`[${new Date().toISOString()}] Erro ao processar boleto:`, error.message);
     
     // Se for erro 400 (dados inválidos)
     if (error.response && error.response.status === 400) {
         const errorData = error.response.data;
+        console.log(`[${new Date().toISOString()}] Erro 400 - Dados inválidos:`, JSON.stringify(errorData, null, 2));
+        
         let mensagemErro = `${errorData.title}\n${errorData.detail}\n`;
         
         // Adiciona as violações se existirem
@@ -252,9 +263,10 @@ app.post("/boleto", autenticar, async (req, res) => {
     }
 
     // Para outros tipos de erro
+    console.error(`[${new Date().toISOString()}] Erro 500 - Erro interno:`, error);
     return res.status(500).json({
         status: "ERRO",
-        mensagem: "Erro ao processar boleto",
+        mensagem: "Erro ao processar boleto (500)",
         detalhes: error.message
     });
   }
